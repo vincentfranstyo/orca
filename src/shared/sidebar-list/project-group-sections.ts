@@ -117,10 +117,11 @@ export function appendProjectGroupSections(
       projectGroup,
       projectGroupDepth: depth
     })
+    // Why: folder workspaces are the group's parent-dir terminals; collapse only folds child repos/groups.
+    for (const pair of folderWorkspacesByProjectGroupId.get(projectGroup.id) ?? []) {
+      result.push(buildFolderWorkspaceRow(pair, depth + 1))
+    }
     if (!collapsedGroups.has(key)) {
-      for (const pair of folderWorkspacesByProjectGroupId.get(projectGroup.id) ?? []) {
-        result.push(buildFolderWorkspaceRow(pair, depth + 1))
-      }
       appendOrderedGroups(ctx, withRepoSectionDisplayLabels(repoEntries), depth + 1)
       for (const childGroup of childGroups) {
         appendProjectGroup(childGroup, depth + 1)

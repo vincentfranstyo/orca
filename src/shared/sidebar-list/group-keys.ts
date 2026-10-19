@@ -12,6 +12,13 @@ export function getProjectGroupHeaderKey(groupId: string | null): string {
   return groupId ? `project-group:${groupId}` : UNGROUPED_PROJECT_GROUP_KEY
 }
 
+export const PROJECT_GROUP_REPOS_PREFIX = 'project-group-repos:'
+
+/** Collapsible bucket holding a group's repos, so its folder workspace rows stay outside it. */
+export function getProjectGroupReposKey(groupId: string): string {
+  return `${PROJECT_GROUP_REPOS_PREFIX}${groupId}`
+}
+
 export const PINNED_GROUP_KEY = 'pinned'
 
 export const ALL_GROUP_KEY = 'all'

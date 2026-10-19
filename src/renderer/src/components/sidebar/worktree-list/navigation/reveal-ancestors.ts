@@ -1,6 +1,9 @@
 import type { ProjectGroup } from '../../../../../../shared/project-group-types'
 import type { Repo } from '../../../../../../shared/repo-types'
-import { getProjectGroupHeaderKey } from '../../../../../../shared/sidebar-list/group-keys'
+import {
+  getProjectGroupHeaderKey,
+  getProjectGroupReposKey
+} from '../../../../../../shared/sidebar-list/group-keys'
 import type { ProjectGroupingModel } from '../../../../../../shared/project-section-grouping'
 
 function getProjectIdFromHeaderRowKey(rowKey: string): string | null {
@@ -58,7 +61,8 @@ function getProjectGroupAncestorKeys(
       break
     }
     seen.add(currentGroupId)
-    keys.unshift(getProjectGroupHeaderKey(group.id))
+    // Why: repos may sit inside the group's repos bucket; opening an absent bucket key is a no-op.
+    keys.unshift(getProjectGroupHeaderKey(group.id), getProjectGroupReposKey(group.id))
     currentGroupId = group.parentGroupId
   }
   return keys

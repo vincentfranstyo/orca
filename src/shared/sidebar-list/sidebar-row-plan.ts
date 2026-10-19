@@ -114,7 +114,12 @@ export function planSidebarRows(inputs: SidebarRowPlanInputs) {
     pendingByRepo.set(creation.repoId, list)
   }
 
-  const projectGroupPaths = getProjectGroupOccurrencePaths(projectGroups)
+  const projectGroupPaths = getProjectGroupOccurrencePaths(
+    projectGroups,
+    groupBy === 'repo'
+      ? new Set(renderableFolderWorkspaces.map((pair) => pair.projectGroup.id))
+      : undefined
+  )
   const occurrencePlan = buildWorktreeOccurrencePlan({
     rows: worktrees,
     identityOf: getWorktreeHostIdentity,

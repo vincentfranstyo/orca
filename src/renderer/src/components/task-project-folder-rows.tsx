@@ -13,18 +13,24 @@ import {
 export default function TaskProjectFolderRows({
   groups,
   selected,
-  onChange
+  onChange,
+  query,
+  onHover
 }: {
   groups: readonly TaskProjectPickerGroup[]
   selected: ReadonlySet<string>
   onChange: (next: ReadonlySet<string>) => void
+  /** Folder rows step aside while searching so matches stay at the top. */
+  query: string
+  /** Clears the project-list highlight, as the "All projects" row does. */
+  onHover: () => void
 }): React.JSX.Element | null {
   const projectGroups = useAppStore((s) => s.projectGroups)
   const folders = useMemo(
     () => getTaskProjectFolders(groups, projectGroups),
     [groups, projectGroups]
   )
-  if (folders.length === 0) {
+  if (folders.length === 0 || query.trim()) {
     return null
   }
   return (
@@ -42,6 +48,7 @@ export default function TaskProjectFolderRows({
               }
             }}
             onMouseDown={(event) => event.preventDefault()}
+            onMouseEnter={onHover}
             className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
           >
             <Check

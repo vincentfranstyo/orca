@@ -272,7 +272,10 @@ export default function TaskProjectSourceCombobox({
               </span>
             </button>
           </div>
-          <TaskProjectFolderRows groups={groups} selected={selected} onChange={onChange} />
+          <TaskProjectFolderRows
+            {...{ groups, selected, onChange, query }}
+            onHover={() => setCommandValue('')}
+          />
           <CommandList>
             {filteredGroups.length === 0 ? (
               <div className="px-3 py-6 text-center text-xs text-muted-foreground">

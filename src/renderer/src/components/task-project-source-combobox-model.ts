@@ -1,6 +1,11 @@
 import { getRepoExecutionHostId } from '../../../shared/execution-host'
 import type { Repo } from '../../../shared/repo-types'
 import type { ProjectGroup } from '../../../shared/project-group-types'
+import {
+  buildProjectGroupChildIndex,
+  collectProjectGroupSubtreeIds,
+  getDistinctProjectGroups
+} from '../../../shared/project-groups'
 import type { TaskProjectPickerGroup } from './task-page-default-repo-selection'
 
 export function selectedTaskProjectGroups(
@@ -41,30 +46,42 @@ export function hasMultipleTaskProjectHostsInGroup(group: TaskProjectPickerGroup
   return hasMultipleTaskProjectHosts([group])
 }
 
-/** A project group (imported folder) whose child projects can be toggled together. */
+/** A top-level project group (imported folder) whose projects, nested groups included, toggle together. */
 export type TaskProjectFolder = {
   id: string
   name: string
-  members: TaskProjectPickerGroup[]
+  members: { group: TaskProjectPickerGroup; source: Repo }[]
 }
 
 export function getTaskProjectFolders(
   groups: readonly TaskProjectPickerGroup[],
-  projectGroups: readonly Pick<ProjectGroup, 'id' | 'name'>[]
+  projectGroups: readonly Pick<ProjectGroup, 'id' | 'name' | 'parentGroupId' | 'tabOrder'>[]
 ): TaskProjectFolder[] {
-  return projectGroups.flatMap((projectGroup) => {
-    const members = groups.filter((group) =>
-      group.sources.some((source) => source.projectGroupId === projectGroup.id)
-    )
-    return members.length > 0 ? [{ id: projectGroup.id, name: projectGroup.name, members }] : []
-  })
+  // Why distinct: hosts can publish one group under the same id (#30045).
+  const distinct = getDistinctProjectGroups(projectGroups)
+  const ids = new Set(distinct.map((group) => group.id))
+  const childIndex = buildProjectGroupChildIndex(distinct)
+  return distinct
+    .filter((group) => !group.parentGroupId || !ids.has(group.parentGroupId))
+    .sort((left, right) => left.tabOrder - right.tabOrder)
+    .flatMap((root) => {
+      const subtree = collectProjectGroupSubtreeIds(childIndex, root.id)
+      const members = groups.flatMap((group) => {
+        // Why: pick the source that lives in this folder, not the picker's preferred host copy.
+        const source = group.sources.find(
+          (candidate) => candidate.projectGroupId && subtree.has(candidate.projectGroupId)
+        )
+        return source ? [{ group, source }] : []
+      })
+      return members.length > 0 ? [{ id: root.id, name: root.name, members }] : []
+    })
 }
 
 export function isTaskProjectFolderSelected(
   folder: TaskProjectFolder,
   selected: ReadonlySet<string>
 ): boolean {
-  return folder.members.every((group) => isTaskProjectGroupSelected(group, selected))
+  return folder.members.every(({ group }) => isTaskProjectGroupSelected(group, selected))
 }
 
 /** Selects every folder member, or deselects them all when already selected.
@@ -75,7 +92,7 @@ export function toggleTaskProjectFolder(
 ): Set<string> | null {
   const next = new Set(selected)
   if (isTaskProjectFolderSelected(folder, selected)) {
-    for (const group of folder.members) {
+    for (const { group } of folder.members) {
       for (const source of group.sources) {
         next.delete(source.id)
       }
@@ -83,9 +100,9 @@ export function toggleTaskProjectFolder(
     // Why: task fetches assume at least one selected project.
     return next.size > 0 ? next : null
   }
-  for (const group of folder.members) {
+  for (const { group, source } of folder.members) {
     if (!isTaskProjectGroupSelected(group, next)) {
-      next.add(group.repo.id)
+      next.add(source.id)
     }
   }
   return next

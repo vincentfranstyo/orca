@@ -92,4 +92,23 @@ describe('getProjectGroupHeaderSectionEndByGroupId', () => {
 
     expect(ends.get('a')).toBe(startOfC)
   })
+
+  it('keeps a group’s nested Repositories header inside its section', () => {
+    const reposHeader = {
+      type: 'header',
+      key: 'project-group-repos:a',
+      label: 'Repositories',
+      count: 1,
+      projectGroupDepth: 1
+    } as RenderRow
+    const allHeader = { type: 'header', key: 'all', label: '', count: 1 } as RenderRow
+    const ends = getProjectGroupHeaderSectionEndByGroupId({
+      rows: [groupHeader('a'), item, reposHeader, item, allHeader],
+      firstHeaderIndex: 0,
+      sidebarProjectGroupHeaderIdsByBucket: new Map([['root', ['a']]]),
+      projectGroupHeaderBucketByGroupId: new Map([['a', 'root']])
+    })
+
+    expect(ends.get('a')).toBe(28 + 116 + 32 + 116)
+  })
 })

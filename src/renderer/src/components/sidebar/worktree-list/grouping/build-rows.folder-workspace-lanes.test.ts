@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { buildRows } from './build-rows.test-fixture'
 import { getFolderWorkspaceLaneKey } from '../../../../../../shared/sidebar-list/folder-workspace-lanes'
-import { getPRLaneKey } from '../../../../../../shared/sidebar-list/group-keys'
+import {
+  getPRLaneKey,
+  getProjectGroupHeaderKey,
+  getProjectGroupReposKey
+} from '../../../../../../shared/sidebar-list/group-keys'
 import { getPRGroupKey } from './pr-group-key'
 import type { Row, WorktreeGroupBy } from '../../../../../../shared/sidebar-list/row-types'
 import { repo, worktree } from '../../worktree-list-groups-test-fixtures'
@@ -243,5 +247,39 @@ describe('host bookkeeping for lanes containing folder workspaces', () => {
     // ids, or the host-section fallback leaks the global id list into it.
     expect(ids?.has(SSH_HOST)).toBe(true)
     expect(ids?.get(SSH_HOST)).toEqual([])
+  })
+})
+
+describe('Repositories header under a folder-backed group', () => {
+  const reposKey = getProjectGroupReposKey(GROUP.id)
+  const headerKeys = (rows: Row[]) =>
+    rows.flatMap((row) =>
+      row.type === 'header' ? [`${row.key}@${row.projectGroupDepth ?? 0}`] : []
+    )
+
+  it('nests the repo header one level under the Repositories header', () => {
+    const rows = buildSidebarRows({ groupBy: 'repo' })
+    const keys = headerKeys(rows)
+    const groupIndex = keys.indexOf(`${getProjectGroupHeaderKey(GROUP.id)}@0`)
+    expect(keys[groupIndex + 1]).toBe(`${reposKey}@1`)
+    expect(keys[groupIndex + 2]).toMatch(/@2$/)
+    expect(rows.findIndex((row) => row.type === 'folder-workspace')).toBeLessThan(
+      rows.findIndex((row) => row.type === 'header' && row.key === reposKey)
+    )
+  })
+
+  it('collapsing Repositories hides repos but keeps the folder workspace', () => {
+    const rows = buildSidebarRows({ groupBy: 'repo', collapsedGroups: new Set([reposKey]) })
+    expect(folderRows(rows)).toHaveLength(1)
+    expect(rows.some((row) => row.type === 'item')).toBe(false)
+  })
+
+  it('adds no Repositories header without a folder workspace or outside repo grouping', () => {
+    for (const rows of [
+      buildSidebarRows({ groupBy: 'repo', folderWorkspaces: [] }),
+      buildSidebarRows({ groupBy: 'workspace-status' })
+    ]) {
+      expect(rows.some((row) => row.type === 'header' && row.key === reposKey)).toBe(false)
+    }
   })
 })

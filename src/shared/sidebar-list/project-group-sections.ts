@@ -124,19 +124,19 @@ export function appendProjectGroupSections(
       }
       // Why: with a parent-dir workspace present, repos fold into their own bucket so the
       // parent terminal stays visible while child repos collapse.
-      const bucketed = folderPairs.length > 0 && (repoEntries.length > 0 || childGroups.length > 0)
+      const reposCount = childGroups.reduce(
+        (count, child) => count + getProjectGroupSubtreeCount(child.id),
+        repoEntries.length
+      )
+      const bucketed = folderPairs.length > 0 && reposCount > 0
       const contentDepth = bucketed ? depth + 2 : depth + 1
       const reposKey = getProjectGroupReposKey(projectGroup.id)
       if (bucketed) {
         result.push({
           type: 'header',
           key: reposKey,
-          label: 'Repositories',
-          count: childGroups.reduce(
-            (count, child) => count + getProjectGroupSubtreeCount(child.id),
-            repoEntries.length
-          ),
-          icon: { kind: 'project' },
+          count: reposCount,
+          icon: { kind: 'project-group-repos' },
           projectGroupDepth: depth + 1
         })
       }

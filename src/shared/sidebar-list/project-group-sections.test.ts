@@ -45,7 +45,14 @@ function emit(collapsed: string[], withFolder = true): string[] {
   appendProjectGroupSections(ctx, {
     orderedGroups: [],
     projectGroups: [group, childGroup],
-    folderWorkspaces: withFolder ? [{ folderWorkspace, projectGroup: group }] : [],
+    folderWorkspaces: [
+      ...(withFolder ? [{ folderWorkspace, projectGroup: group }] : []),
+      // Why: gives the child group content, so the parent's Repositories header has a count.
+      {
+        folderWorkspace: { ...folderWorkspace, id: 'f2', projectGroupId: 'g2' },
+        projectGroup: childGroup
+      }
+    ],
     projectOrderBy: 'manual',
     repoOrder: undefined
   })
@@ -58,11 +65,29 @@ const repos = getProjectGroupReposKey('g1')
 
 describe('appendProjectGroupSections', () => {
   it('puts children in a repos bucket under the parent workspace', () => {
-    expect(emit([])).toEqual([g1, 'folder-workspace:f1', repos, g2])
+    expect(emit([])).toEqual([g1, 'folder-workspace:f1', repos, g2, 'folder-workspace:f2'])
   })
 
   it('collapsing the repos bucket keeps the parent workspace visible', () => {
     expect(emit([repos])).toEqual([g1, 'folder-workspace:f1', repos])
+  })
+
+  it('adds no bucket when the children have nothing to show', () => {
+    const result: SectionAppendContext['result'] = []
+    // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: empty orderedGroups never reads the repo/occurrence fields.
+    const ctx = { result, collapsedGroups: new Set() } as unknown as SectionAppendContext
+    appendProjectGroupSections(ctx, {
+      orderedGroups: [],
+      projectGroups: [group, childGroup],
+      folderWorkspaces: [{ folderWorkspace, projectGroup: group }],
+      projectOrderBy: 'manual',
+      repoOrder: undefined
+    })
+    expect(result.map((row) => ('key' in row ? row.key : row.type))).toEqual([
+      g1,
+      'folder-workspace:f1',
+      g2
+    ])
   })
 
   it('collapsing the group hides everything', () => {
@@ -70,8 +95,7 @@ describe('appendProjectGroupSections', () => {
   })
 
   it('adds no bucket without a parent workspace', () => {
-    expect(emit([])).not.toContain(getProjectGroupReposKey('g2'))
-    expect(emit([], false)).toEqual([g1, g2])
+    expect(emit([], false)).toEqual([g1, g2, 'folder-workspace:f2'])
   })
 })
 

@@ -1,9 +1,8 @@
-import { app } from 'electron'
-import { is } from '@electron-toolkit/utils'
 import { isMacInstallRequested } from '../updater-mac-install'
 import type { UpdateCheckOptions } from '../../shared/update-status-types'
 import type { ReleaseChannel } from '../../shared/release-channel'
 import { UpdaterScheduling } from './updater-scheduling'
+import { areUpdatesDisabled } from './updates-disabled'
 
 /** Handles checks initiated from the desktop menu and modifier-key variants. */
 export abstract class UpdaterMenuChecks extends UpdaterScheduling {
@@ -15,7 +14,7 @@ export abstract class UpdaterMenuChecks extends UpdaterScheduling {
     ) {
       return
     }
-    if (!app.isPackaged || is.dev) {
+    if (areUpdatesDisabled()) {
       this.sendStatus({ state: 'not-available', userInitiated: true })
       return
     }

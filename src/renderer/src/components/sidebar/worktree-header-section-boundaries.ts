@@ -1,6 +1,7 @@
 import { estimateRenderRowSize } from './worktree-list/viewport/virtual-rows'
 import type { RenderRow } from './worktree-list/listing/render-row'
 import type { GroupHeaderRow } from '../../../../shared/sidebar-list/row-types'
+import { PROJECT_GROUP_REPOS_PREFIX } from '../../../../shared/sidebar-list/group-keys'
 
 function getEstimatedRenderRowStarts(
   rows: readonly RenderRow[],
@@ -78,7 +79,9 @@ function findProjectGroupSectionEndIndex(
       continue
     }
     const rowDepth = row.projectGroupDepth ?? 0
-    if (rowDepth <= depth || (!row.repo && !row.projectGroup)) {
+    // Why: a group's own Repositories header sits inside its section, deeper than the group.
+    const isNestedReposHeader = row.key.startsWith(PROJECT_GROUP_REPOS_PREFIX) && rowDepth > depth
+    if (rowDepth <= depth || (!row.repo && !row.projectGroup && !isNestedReposHeader)) {
       return index
     }
   }

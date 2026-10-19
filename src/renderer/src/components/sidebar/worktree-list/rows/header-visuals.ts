@@ -54,6 +54,17 @@ const PROJECT_GROUP_META = {
   icon: FolderTree
 } as const
 
+const PROJECT_GROUP_REPOS_META = {
+  get label() {
+    return translate(
+      'auto.components.sidebar.worktree.list.groups.projectGroupRepos',
+      'Repositories'
+    )
+  },
+  tone: 'text-foreground',
+  icon: FolderTree
+} as const
+
 const PINNED_GROUP_META = {
   get label() {
     return translate('auto.components.sidebar.worktree.list.groups.4aeefc5996', 'Pinned')
@@ -89,6 +100,8 @@ export function getSidebarHeaderVisual(
       return ALL_GROUP_META
     case 'project':
       return PROJECT_GROUP_META
+    case 'project-group-repos':
+      return PROJECT_GROUP_REPOS_META
     case 'pr-status':
       return PR_GROUP_META[icon.prGroup]
     case 'workspace-status': {

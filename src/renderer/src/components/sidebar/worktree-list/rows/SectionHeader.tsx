@@ -18,7 +18,10 @@ import type {
   GroupHeaderRow,
   WorktreeGroupBy
 } from '../../../../../../shared/sidebar-list/row-types'
-import { PINNED_GROUP_KEY } from '../../../../../../shared/sidebar-list/group-keys'
+import {
+  PINNED_GROUP_KEY,
+  PROJECT_GROUP_REPOS_PREFIX
+} from '../../../../../../shared/sidebar-list/group-keys'
 import { getWorkspaceStatusFromGroupKey } from '../../workspace-status'
 import { getVirtualRowTransform } from '../viewport/virtual-rows'
 import { getSidebarHeaderVisual } from './header-visuals'
@@ -94,6 +97,7 @@ export function renderWorktreeSectionHeaderRow(args: {
   const { headerDrag } = ctx
   const isRepoHeader = ctx.groupBy === 'repo' && row.repo !== undefined
   const isProjectGroupHeader = ctx.groupBy === 'repo' && row.projectGroup !== undefined
+  const isProjectGroupReposHeader = row.key.startsWith(PROJECT_GROUP_REPOS_PREFIX)
   const projectIdForHeader = isRepoHeader ? row.repo!.id : undefined
   const projectGroupIdForHeader =
     isProjectGroupHeader && !row.repo && typeof row.projectGroup?.id === 'string'
@@ -180,7 +184,11 @@ export function renderWorktreeSectionHeaderRow(args: {
   // Why: repo/project/status/pinned share compact section chrome; flat "All" stays a simple label.
   const showHeaderCollapseAffordance =
     row.count > 0 &&
-    (isRepoHeader || isProjectGroupHeader || headerWorkspaceStatus !== null || isPinnedHeader)
+    (isRepoHeader ||
+      isProjectGroupHeader ||
+      isProjectGroupReposHeader ||
+      headerWorkspaceStatus !== null ||
+      isPinnedHeader)
   return (
     <div
       key={vItem.key}
@@ -254,7 +262,7 @@ export function renderWorktreeSectionHeaderRow(args: {
         style={{
           // Why: non-project headers like "All" are flat-list labels; don't reserve project hierarchy indent.
           paddingLeft:
-            isRepoHeader || isProjectGroupHeader
+            isRepoHeader || isProjectGroupHeader || isProjectGroupReposHeader
               ? getProjectGroupHeaderPaddingLeft(row.projectGroupDepth ?? 0)
               : WORKTREE_SECTION_HEADER_PADDING_LEFT
         }}

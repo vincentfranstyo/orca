@@ -12,6 +12,20 @@ export function getProjectGroupHeaderKey(groupId: string | null): string {
   return groupId ? `project-group:${groupId}` : UNGROUPED_PROJECT_GROUP_KEY
 }
 
+export const PROJECT_GROUP_REPOS_PREFIX = 'project-group-repos:'
+
+/** Collapsible bucket holding a group's repos, so its folder workspace rows stay outside it. */
+export function getProjectGroupReposKey(groupId: string): string {
+  return `${PROJECT_GROUP_REPOS_PREFIX}${groupId}`
+}
+
+/** Groups whose repos render under a Repositories header: those owning a folder workspace. */
+export function getBucketedProjectGroupIds(
+  folderWorkspaces: readonly { projectGroupId: string }[]
+): Set<string> {
+  return new Set(folderWorkspaces.map((workspace) => workspace.projectGroupId))
+}
+
 export const PINNED_GROUP_KEY = 'pinned'
 
 export const ALL_GROUP_KEY = 'all'

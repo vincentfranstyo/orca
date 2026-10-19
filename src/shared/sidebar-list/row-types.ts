@@ -20,6 +20,7 @@ export type SidebarHeaderIcon =
   | { kind: 'pinned' }
   | { kind: 'all' }
   | { kind: 'project' }
+  | { kind: 'project-group-repos' }
   | { kind: 'pr-status'; prGroup: PRGroupKey }
   | { kind: 'workspace-status'; status: WorkspaceStatus }
 

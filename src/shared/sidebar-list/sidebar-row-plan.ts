@@ -5,7 +5,7 @@ import type { ProjectOrderBy } from '../ui-chrome-types'
 import type { WorktreeLineage } from '../worktree/lineage-types'
 import type { WorkspaceStatusDefinition, Worktree } from '../worktree/types'
 import type { ExecutionHostId } from '../execution-host'
-import { ALL_GROUP_KEY, PINNED_GROUP_KEY } from './group-keys'
+import { ALL_GROUP_KEY, getBucketedProjectGroupIds, PINNED_GROUP_KEY } from './group-keys'
 import { appendOrderedGroups } from './group-sections'
 import type { SectionAppendContext } from './group-sections'
 import {
@@ -114,7 +114,12 @@ export function planSidebarRows(inputs: SidebarRowPlanInputs) {
     pendingByRepo.set(creation.repoId, list)
   }
 
-  const projectGroupPaths = getProjectGroupOccurrencePaths(projectGroups)
+  const projectGroupPaths = getProjectGroupOccurrencePaths(
+    projectGroups,
+    groupBy === 'repo'
+      ? getBucketedProjectGroupIds(renderableFolderWorkspaces.map((pair) => pair.folderWorkspace))
+      : undefined
+  )
   const occurrencePlan = buildWorktreeOccurrencePlan({
     rows: worktrees,
     identityOf: getWorktreeHostIdentity,

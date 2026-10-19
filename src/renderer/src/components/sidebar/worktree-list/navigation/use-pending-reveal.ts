@@ -11,6 +11,7 @@ import {
 } from './render-row-lookup'
 import { revealMountedSidebarRowElement, revealMountedWorktreeElement } from './mounted-row-reveal'
 import { getSidebarRowRevealAncestorKeys } from './reveal-ancestors'
+import { getBucketedProjectGroupIds } from '../../../../../../shared/sidebar-list/group-keys'
 import { sidebarWorkspaceStillExists } from './folder-reveal'
 import {
   expandGroupsForWorktreeReveal,
@@ -207,7 +208,8 @@ export function usePendingSidebarReveal(args: PendingSidebarRevealArgs): void {
       rowKey: pendingRevealSidebarRow.rowKey,
       repoMap: current.repoMap,
       projectGroups: current.projectGroups,
-      projectGrouping: current.projectGrouping
+      projectGrouping: current.projectGrouping,
+      bucketedGroupIds: getBucketedProjectGroupIds(current.folderWorkspaces)
     })) {
       if (current.collapsedGroups.has(groupKey)) {
         current.toggleGroup(groupKey)

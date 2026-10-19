@@ -18,6 +18,7 @@ import type { WorktreeFetchOptions } from '@/store/slices/worktree-helpers'
 import { translate } from '@/i18n/i18n'
 import { worktreeRefreshOptions } from './add-repo-runtime-owner'
 import { completeNestedFolderOpen } from './complete-nested-folder-open'
+import { createParentFolderWorkspace } from './create-parent-folder-workspace'
 import { defaultProjectGroupNameForPath } from './add-repo-dialog-types'
 import type { ExecutionHostId } from '../../../../shared/execution-host'
 
@@ -180,6 +181,9 @@ export function useAddRepoNestedImportFlow({
         }
         const completionOwner = nestedConnectionId === null ? nestedRuntimeEnvironmentId : undefined
         const completionOwnerOptions = worktreeRefreshOptions(completionOwner, nestedConnectionId)
+        if (mode === 'group') {
+          await createParentFolderWorkspace(result, nestedConnectionId, nestedRuntimeEnvironmentId)
+        }
         for (const projectId of importedRepoIds) {
           await fetchWorktrees(projectId, completionOwnerOptions)
         }

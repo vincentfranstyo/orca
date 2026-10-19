@@ -6,7 +6,7 @@ import {
 import type { ProjectGroup } from '../project-group-types'
 import type { ProjectOrderBy } from '../ui-chrome-types'
 import { getDistinctProjectGroups, getEffectiveProjectGroupManualRank } from '../project-groups'
-import { getProjectGroupHeaderKey } from './group-keys'
+import { getProjectGroupHeaderKey, getProjectGroupReposKey } from './group-keys'
 import { appendOrderedGroups } from './group-sections'
 import { compareCodePoints, compareSidebarText } from './text-order'
 import type { SectionAppendContext } from './group-sections'
@@ -118,12 +118,33 @@ export function appendProjectGroupSections(
       projectGroupDepth: depth
     })
     if (!collapsedGroups.has(key)) {
-      for (const pair of folderWorkspacesByProjectGroupId.get(projectGroup.id) ?? []) {
+      const folderPairs = folderWorkspacesByProjectGroupId.get(projectGroup.id) ?? []
+      for (const pair of folderPairs) {
         result.push(buildFolderWorkspaceRow(pair, depth + 1))
       }
-      appendOrderedGroups(ctx, withRepoSectionDisplayLabels(repoEntries), depth + 1)
-      for (const childGroup of childGroups) {
-        appendProjectGroup(childGroup, depth + 1)
+      // Why: with a parent-dir workspace present, repos fold into their own bucket so the
+      // parent terminal stays visible while child repos collapse.
+      const bucketed = folderPairs.length > 0 && (repoEntries.length > 0 || childGroups.length > 0)
+      const contentDepth = bucketed ? depth + 2 : depth + 1
+      const reposKey = getProjectGroupReposKey(projectGroup.id)
+      if (bucketed) {
+        result.push({
+          type: 'header',
+          key: reposKey,
+          label: 'Repositories',
+          count: childGroups.reduce(
+            (count, child) => count + getProjectGroupSubtreeCount(child.id),
+            repoEntries.length
+          ),
+          icon: { kind: 'project' },
+          projectGroupDepth: depth + 1
+        })
+      }
+      if (!bucketed || !collapsedGroups.has(reposKey)) {
+        appendOrderedGroups(ctx, withRepoSectionDisplayLabels(repoEntries), contentDepth)
+        for (const childGroup of childGroups) {
+          appendProjectGroup(childGroup, contentDepth)
+        }
       }
     }
     groupByProjectGroupId.delete(projectGroup.id)
@@ -149,10 +170,16 @@ export function appendProjectGroupSections(
   )
 }
 
-/** The same group parents used by section emission, including missing-parent roots. */
-export function getProjectGroupOccurrencePaths(projectGroups: readonly ProjectGroup[]) {
+/** The same group parents used by section emission, including missing-parent roots.
+ *  Paths point at where a group's contents render (its repos bucket when bucketed). */
+export function getProjectGroupOccurrencePaths(
+  projectGroups: readonly ProjectGroup[],
+  bucketedGroupIds: ReadonlySet<string> = new Set()
+) {
   const groupsById = new Map(projectGroups.map((group) => [group.id, group]))
   const paths = new Map<string, OccurrenceSectionPath>()
+  const contentPathOf = (groupId: string, path: OccurrenceSectionPath): OccurrenceSectionPath =>
+    bucketedGroupIds.has(groupId) ? { key: getProjectGroupReposKey(groupId), parent: path } : path
   for (const group of getDistinctProjectGroups(projectGroups)) {
     const pending: ProjectGroup[] = []
     const seen = new Set<string>()
@@ -165,7 +192,7 @@ export function getProjectGroupOccurrencePaths(projectGroups: readonly ProjectGr
     let parent = current ? paths.get(current.id) : undefined
     for (let index = pending.length - 1; index >= 0; index -= 1) {
       const entry = pending[index]
-      const path: OccurrenceSectionPath = { key: getProjectGroupHeaderKey(entry.id), parent }
+      const path = contentPathOf(entry.id, { key: getProjectGroupHeaderKey(entry.id), parent })
       paths.set(entry.id, path)
       parent = path
     }

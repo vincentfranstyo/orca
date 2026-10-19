@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils'
 import { translate } from '@/i18n/i18n'
 import type { Repo } from '../../../shared/repo-types'
 import type { TaskProjectPickerGroup } from './task-page-default-repo-selection'
+import TaskProjectFolderRows from './task-project-folder-rows'
 import {
   getSelectedTaskProjectSource,
   hasMultipleTaskProjectHosts,
@@ -271,6 +272,7 @@ export default function TaskProjectSourceCombobox({
               </span>
             </button>
           </div>
+          <TaskProjectFolderRows groups={groups} selected={selected} onChange={onChange} />
           <CommandList>
             {filteredGroups.length === 0 ? (
               <div className="px-3 py-6 text-center text-xs text-muted-foreground">

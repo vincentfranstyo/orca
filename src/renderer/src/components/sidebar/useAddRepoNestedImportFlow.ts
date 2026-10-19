@@ -181,14 +181,14 @@ export function useAddRepoNestedImportFlow({
         }
         const completionOwner = nestedConnectionId === null ? nestedRuntimeEnvironmentId : undefined
         const completionOwnerOptions = worktreeRefreshOptions(completionOwner, nestedConnectionId)
-        if (mode === 'group') {
-          await createParentFolderWorkspace(result, nestedConnectionId, nestedRuntimeEnvironmentId)
-        }
         for (const projectId of importedRepoIds) {
           await fetchWorktrees(projectId, completionOwnerOptions)
         }
         if (gen !== nestedImportGenRef.current) {
           return
+        }
+        if (mode === 'group') {
+          await createParentFolderWorkspace(result, nestedConnectionId, nestedRuntimeEnvironmentId)
         }
         if (result.failedCount > 0) {
           toast.warning(

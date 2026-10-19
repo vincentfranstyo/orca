@@ -28,6 +28,7 @@ const mocks = vi.hoisted(() => ({
   state: {
     repos: [] as Repo[],
     addNonGitFolder: vi.fn(),
+    createFolderWorkspace: vi.fn(),
     closeModal: vi.fn(),
     openModal: vi.fn()
   }
@@ -55,6 +56,7 @@ vi.mock('@/lib/telemetry', () => ({
 }))
 
 import { track } from '@/lib/telemetry'
+import { toast } from 'sonner'
 import { useAddRepoNestedImportFlow } from './useAddRepoNestedImportFlow'
 
 const scan: NestedRepoScanResult = {
@@ -247,5 +249,80 @@ describe('useAddRepoNestedImportFlow open folder fallback', () => {
       executionHostId: 'ssh:ssh-builder'
     })
     expect(onGitRepoReady).not.toHaveBeenCalled()
+  })
+})
+
+describe('useAddRepoNestedImportFlow parent folder workspace', () => {
+  const group = {
+    id: 'g1',
+    name: 'platform',
+    parentPath: scan.selectedPath,
+    parentGroupId: null,
+    createdFrom: 'folder-scan' as const,
+    tabOrder: 0,
+    isCollapsed: false,
+    color: null,
+    createdAt: 1,
+    updatedAt: 1
+  }
+  const imported = (withGroup: boolean): ProjectGroupImportResult => ({
+    ...(withGroup ? { group } : {}),
+    projects: [{ path: scan.repos[0].path, projectId: 'app', status: 'imported' }],
+    importedCount: 1,
+    alreadyKnownCount: 0,
+    failedCount: 0
+  })
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mocks.state.repos = []
+    mocks.state.createFolderWorkspace.mockResolvedValue({ id: 'fw' })
+  })
+
+  it('creates a workspace at the group root after a group import', async () => {
+    const { handleImportNestedRepos } = useTestAddRepoNestedImportFlow({
+      nestedSelectedPaths: new Set([scan.repos[0].path]),
+      importNestedRepos: vi.fn().mockResolvedValue(imported(true))
+    })
+
+    await handleImportNestedRepos('group')
+
+    expect(mocks.state.createFolderWorkspace).toHaveBeenCalledWith(
+      { projectGroupId: 'g1', connectionId: null },
+      { runtimeEnvironmentId: null }
+    )
+  })
+
+  it('creates nothing for a separate import or a result without a group', async () => {
+    for (const [mode, withGroup] of [
+      ['separate', true],
+      ['group', false]
+    ] as const) {
+      const { handleImportNestedRepos } = useTestAddRepoNestedImportFlow({
+        nestedSelectedPaths: new Set([scan.repos[0].path]),
+        importNestedRepos: vi.fn().mockResolvedValue(imported(withGroup))
+      })
+      await handleImportNestedRepos(mode)
+    }
+
+    expect(mocks.state.createFolderWorkspace).not.toHaveBeenCalled()
+  })
+
+  it('keeps the import successful and warns when the workspace cannot be created', async () => {
+    mocks.state.createFolderWorkspace.mockRejectedValue(new Error('path missing'))
+    const fetchWorktrees = vi.fn()
+    const { handleImportNestedRepos } = useTestAddRepoNestedImportFlow({
+      nestedSelectedPaths: new Set([scan.repos[0].path]),
+      importNestedRepos: vi.fn().mockResolvedValue(imported(true)),
+      fetchWorktrees
+    })
+
+    await handleImportNestedRepos('group')
+
+    expect(fetchWorktrees).toHaveBeenCalled()
+    expect(toast.error).not.toHaveBeenCalled()
+    expect(toast.warning).toHaveBeenCalledWith(expect.any(String), {
+      description: 'path missing'
+    })
   })
 })

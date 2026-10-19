@@ -6854,6 +6854,9 @@
           "outsideDistro": "Pick a folder inside {{value0}}.",
           "underDistro": "This host can only add folders under \\\\wsl.localhost\\{{value0}}.",
           "windowsDrive": "Folders on a Windows drive stay on this computer. Choose this computer as the host to add one."
+        },
+        "createParentFolderWorkspace": {
+          "failed": "Imported, but could not open a workspace for the folder"
         }
       },
       "shared": {
